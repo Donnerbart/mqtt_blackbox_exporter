@@ -94,6 +94,7 @@ var (
 
 	configFile    = flag.String("config.file", "config.yaml", "Exporter configuration file.")
 	listenAddress = flag.String("web.listen-address", ":9214", "The address to listen on for HTTP requests.")
+	enableDebug   = flag.Bool("debug.enable", false, "set this flag to enable exporter debugging")
 	enableTrace   = flag.Bool("trace.enable", false, "set this flag to enable mqtt tracing")
 )
 
@@ -219,8 +220,12 @@ func startProbe(probeConfig *probeConfig) {
 	// Starting to fill metric vectors with meaningful values
 	probeStarted.WithLabelValues(probeConfig.Name, probeConfig.Broker).Inc()
 	defer func() {
+		elapsed := time.Since(t0)
 		probeCompleted.WithLabelValues(probeConfig.Name, probeConfig.Broker).Inc()
-		probeDuration.WithLabelValues(probeConfig.Name, probeConfig.Broker).Observe(time.Since(t0).Seconds())
+		probeDuration.WithLabelValues(probeConfig.Name, probeConfig.Broker).Observe(elapsed.Seconds())
+		if *enableDebug {
+			logger.Printf("Probe %s: took %d ms", probeConfig.Name, elapsed.Milliseconds())
+		}
 	}()
 
 	queue := make(chan [2]string)
@@ -290,6 +295,7 @@ func startProbe(probeConfig *probeConfig) {
 			messagesReceived.WithLabelValues(probeConfig.Name, probeConfig.Broker).Inc()
 		case <-timeout:
 			timedoutTests.WithLabelValues(probeConfig.Name, probeConfig.Broker).Inc()
+			logger.Printf("Probe %s: timed out after %d ms (received: %d)", probeConfig.Name, time.Since(t0).Milliseconds(), receiveCount)
 			return
 		}
 	}
