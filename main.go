@@ -108,14 +108,14 @@ func init() {
 }
 
 // newTLSConfig sets up a the go internal tls config from the given probe config.
+// newTLSConfig sets up the go internal tls config from the given probe config.
 func newTLSConfig(probeConfig *probeConfig) (*tls.Config, error) {
-
 	cfg := &tls.Config{
 		// RootCAs = certs used to verify server cert.
 		RootCAs: nil,
 		// ClientAuth = whether to request cert from server.
 		// Since the server is set up for SSL, this happens
-		// anyways.
+		// anyway.
 		ClientAuth: tls.NoClientCert,
 		// InsecureSkipVerify = verify that cert contents
 		// match server. IP matches what is in cert etc.
@@ -179,16 +179,15 @@ func connectClient(probeConfig *probeConfig, timeout time.Duration, opts *mqtt.C
 		return nil, fmt.Errorf("failed to connect client: %s", token.Error().Error())
 	}
 	return client, nil
-
 }
 
 func startProbe(probeConfig *probeConfig) {
 	num := probeConfig.Messages
 	setupTimeout := probeConfig.TestInterval / 3
 	probeTimeout := probeConfig.TestInterval / 3
-	setupDeadLine := time.Now().Add(setupTimeout)
 	qos := byte(0)
 	t0 := time.Now()
+	setupDeadLine := t0.Add(setupTimeout)
 
 	// Initialize optional metrics with initial values to have them present from the beginning
 	messagesPublished.WithLabelValues(probeConfig.Name, probeConfig.Broker).Add(0)
@@ -273,7 +272,7 @@ func startProbe(probeConfig *probeConfig) {
 
 func main() {
 	flag.Parse()
-	yamlFile, err := ioutil.ReadFile(*configFile)
+	yamlFile, err := os.ReadFile(*configFile)
 
 	if err != nil {
 		logger.Fatalf("Error reading config file: %s", err)
@@ -297,7 +296,6 @@ func main() {
 	logger.Printf("Starting mqtt_blackbox_exporter (build: %s)\n", build)
 
 	for _, probe := range cfg.Probes {
-
 		delay := probe.TestInterval
 		if delay == 0 {
 			delay = 60 * time.Second
