@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -96,6 +97,8 @@ var (
 	enableTrace   = flag.Bool("trace.enable", false, "set this flag to enable mqtt tracing")
 )
 
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
 func init() {
 	prometheus.MustRegister(probeStarted)
 	prometheus.MustRegister(probeDuration)
@@ -107,7 +110,14 @@ func init() {
 	prometheus.MustRegister(errors)
 }
 
-// newTLSConfig sets up a the go internal tls config from the given probe config.
+func RandStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
+
 // newTLSConfig sets up the go internal tls config from the given probe config.
 func newTLSConfig(probeConfig *probeConfig) (*tls.Config, error) {
 	cfg := &tls.Config{
@@ -208,9 +218,13 @@ func startProbe(probeConfig *probeConfig) {
 		logger.Printf("Probe %s: %s", probeConfig.Name, error.Error())
 	}
 
-	publisherOptions := mqtt.NewClientOptions().SetClientID(fmt.Sprintf("%s-p", probeConfig.ClientPrefix))
+	clientSuffix := RandStringRunes(5)
 
-	subscriberOptions := mqtt.NewClientOptions().SetClientID(fmt.Sprintf("%s-s", probeConfig.ClientPrefix)).
+	publisherOptions := mqtt.NewClientOptions().
+		SetClientID(fmt.Sprintf("%s-p-%s", probeConfig.ClientPrefix, clientSuffix))
+
+	subscriberOptions := mqtt.NewClientOptions().
+		SetClientID(fmt.Sprintf("%s-s-%s", probeConfig.ClientPrefix, clientSuffix)).
 		SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
 			queue <- [2]string{msg.Topic(), string(msg.Payload())}
 		})
