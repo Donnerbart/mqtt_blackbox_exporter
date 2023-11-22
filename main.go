@@ -213,9 +213,10 @@ func startProbe(probeConfig *probeConfig) {
 
 	// Initialize optional metrics with initial values to have them present from the beginning
 	messagesPublished.WithLabelValues(probeConfig.Name, probeConfig.Broker).Add(0)
+	messagesPublishTimeout.WithLabelValues(probeConfig.Name, probeConfig.Broker).Add(0)
 	messagesReceived.WithLabelValues(probeConfig.Name, probeConfig.Broker).Add(0)
-	errors.WithLabelValues(probeConfig.Name, probeConfig.Broker).Add(0)
 	timedoutTests.WithLabelValues(probeConfig.Name, probeConfig.Broker).Add(0)
+	errors.WithLabelValues(probeConfig.Name, probeConfig.Broker).Add(0)
 
 	// Starting to fill metric vectors with meaningful values
 	probeStarted.WithLabelValues(probeConfig.Name, probeConfig.Broker).Inc()
