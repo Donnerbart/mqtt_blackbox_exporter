@@ -230,9 +230,9 @@ func startProbe(probeConfig *probeConfig) {
 	}()
 
 	queue := make(chan [2]string)
-	reportError := func(error error) {
+	reportError := func(label string, error error) {
 		errors.WithLabelValues(probeConfig.Name, probeConfig.Broker).Inc()
-		logger.Printf("Probe %s: %s", probeConfig.Name, error.Error())
+		logger.Printf("Probe %s: %s -> %s", probeConfig.Name, label, error.Error())
 	}
 
 	clientSuffix := RandStringRunes(5)
@@ -248,14 +248,14 @@ func startProbe(probeConfig *probeConfig) {
 
 	publisher, err := connectClient(probeConfig, time.Until(setupDeadLine), publisherOptions)
 	if err != nil {
-		reportError(err)
+		reportError("connect publish client", err)
 		return
 	}
 	defer publisher.Disconnect(5)
 
 	subscriber, err := connectClient(probeConfig, time.Until(setupDeadLine), subscriberOptions)
 	if err != nil {
-		reportError(err)
+		reportError("connect subscribe client", err)
 		return
 	}
 	defer subscriber.Disconnect(5)
@@ -264,7 +264,7 @@ func startProbe(probeConfig *probeConfig) {
 		probeConfig.SubscribeTopic = probeConfig.Topic
 	}
 	if token := subscriber.Subscribe(probeConfig.SubscribeTopic, qos, nil); token.WaitTimeout(time.Until(setupDeadLine)) && token.Error() != nil {
-		reportError(token.Error())
+		reportError("subscribe to topic", token.Error())
 		return
 	}
 	defer subscriber.Unsubscribe(probeConfig.SubscribeTopic)
