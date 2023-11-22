@@ -179,6 +179,10 @@ func connectClient(probeConfig *probeConfig, timeout time.Duration, opts *mqtt.C
 		SetPassword(probeConfig.Password).
 		SetTLSConfig(tlsConfig).
 		AddBroker(probeConfig.Broker)
+	baseOptions.SetConnectionLostHandler(func(c mqtt.Client, err error) {
+		logger.Printf("Probe %s: lost MQTT connection to %s error: %s", probeConfig.Name, probeConfig.Broker, err.Error())
+	})
+
 	client := mqtt.NewClient(baseOptions)
 	token := client.Connect()
 	success := token.WaitTimeout(timeout)
