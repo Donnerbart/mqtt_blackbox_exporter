@@ -197,8 +197,15 @@ func connectClient(probeConfig *probeConfig, timeout time.Duration, opts *mqtt.C
 
 func startProbe(probeConfig *probeConfig) {
 	num := probeConfig.Messages
+	minTimeout := 10 * time.Second
 	setupTimeout := probeConfig.TestInterval / 3
+	if setupTimeout < minTimeout {
+		setupTimeout = minTimeout
+	}
 	probeTimeout := probeConfig.TestInterval / 3
+	if probeTimeout < minTimeout {
+		probeTimeout = minTimeout
+	}
 	qos := byte(0)
 	t0 := time.Now()
 	setupDeadLine := t0.Add(setupTimeout)
